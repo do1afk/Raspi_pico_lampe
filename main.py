@@ -28,6 +28,11 @@ gelb   = Pin(12, Pin.OUT)           #GPIO Pin für gelb
 rot    = Pin(13, Pin.OUT)           #GPIO Pin für rot
 
 ####################################################################
+#Variablen:
+minBatVoltage = 1000                 #Batteirespannung wenn alles ok ist
+maxTemp = 30000                      #maximale Temperatur wenn alles ok ist
+
+####################################################################
 #Funktionen:
 
 def getState():                     #lese Status des Wahlrades aus
@@ -82,7 +87,10 @@ def writeBat(read):         #schreibe Batteriezustand
     return 0
 
 def batDown():                     #Notprogramm wenn Batterie leer ist
-    rot.off()
+    pwm14.duty(0)             #dann schalte lampe aus
+    
+    
+    rot.off()                 #blinken
     sleep(0.5)
     rot.on()
     sleep(0.5)
@@ -90,12 +98,13 @@ def batDown():                     #Notprogramm wenn Batterie leer ist
 
 def readTemp():                   #Platinentemp auslesen
     read = temp27.read_u16()
-    print("Temperatur: ", read)
+    #print("Temperatur: ", read)
     sleep(0.01)                   #ADC bug
     return read
 
 def toHot():                      #wenn Platinentemp zu hoch wird
-    for count in range(10): #Dann sinnvolle Zeit aussitzen. 
+    pwm14.duty(0)             #dann schalte lampe aus
+    for count in range(3): #3x blinken
         gruen0.off()
         gruen1.off()
         gelb.off()
@@ -113,27 +122,28 @@ def toHot():                      #wenn Platinentemp zu hoch wird
         
 
 ####################################################################
-#main:
+#main:        
 while True:
-    #Schleife für alles ok
-    while True:
+    if readSpg() > minBatVoltage:      #benötige Spannung abfragen um blinken zu verhindern
         writeState(getState())        #schreibe den Modus, den das Wahlrad vorgibt
-        writeBat(readSpg())            #schreibe den gelesenen Batteriezustand
         
-        if readSpg() < 1000:           #fällt die Batteriespannung unter kritischen wert
-            pwm14.duty(0)             #dann schalte lampe aus
-            break
+    writeBat(readSpg())            #schreibe den gelesenen Batteriezustand
+    
+    print("Max temp: ", maxTemp)
+    print("akt temp: ", readTemp())
+    
+    if readSpg() < minBatVoltage:   #fällt die Batteriespannung unter kritischen wert
+        minBatVoltage = 15000     #erhöhe mindestspannung
+        batDown()                 #rot blinken, kritischen Wert erhöhen und Licht aus
         
-        if readTemp() > 30000:       #wenn Platinentemp zu hoch wird
-            pwm14.duty(0)             #dann schalte lampe aus
-            toHot()                  #und gib gescheid
-        
-    #Schleife für Akku leer    
-    while True:
-        batDown()                    #Akku leer, also rot blinken und licht aus
-        if readSpg() > 15000:          #Wenn Akku wieder mind halb voll, dann gehts wieder
-            break
-        
+
+    
+    if readTemp() > maxTemp:       #wenn Platinentemp zu hoch wird
+        maxTemp = 20000           #maximal Temperatur erniedirgen
+        toHot()                  #und gib gescheid
+    
+
+
     
   
     
