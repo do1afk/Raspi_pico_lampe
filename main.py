@@ -32,7 +32,7 @@ while True:
         header.batDown()                                     #Spannungswarung ausgeben
 
 #3. Nur wenn alles ok ist, Licht anschalten und Batteriezustand anzeigen:
-    if header.readSpg() > header.minBatVoltage and header.readTemp() < header.mmainmaintaxTemp:      #benötige Spannung abfragen um blinken zu verhindern
+    if header.readSpg() > header.minBatVoltage and header.readTemp() < header.maxTemp:      #benötige Spannung abfragen um blinken zu verhindern
         header.writeState(header.readState())        #schreibe den Modus, den das Wahlrad vorgibt
         header.writeSpg(header.readSpg())            #schreibe den gelesenen Batteriezustand
         #Hier ist noch ein BUG!
